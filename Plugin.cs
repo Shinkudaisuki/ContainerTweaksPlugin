@@ -3,12 +3,13 @@ using BepInEx.Logging;
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
 namespace ContainerTweaks
 {
-    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.0.0")]
+    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.1.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log { get; private set; }
@@ -42,6 +43,7 @@ namespace ContainerTweaks.Patch
         private static ConfigEntry<float> scrollStep;
         private static ConfigEntry<float> scrollLerpSpeed;
         private static ConfigEntry<float> dragDistanceThreshold;
+        private static ConfigEntry<KeyCode> quickTransferKey;
 
         private static int ColumnCount { get { return Mathf.Max(1, columnCount.Value); } }
         private static int VisibleRowCount { get { return Mathf.Max(1, visibleRowCount.Value); } }
@@ -73,6 +75,7 @@ namespace ContainerTweaks.Patch
             scrollLerpSpeed = config.Bind("Scrolling", "ScrollLerpSpeed", 20f, "Smoothing speed used when scrolling. Minimum: 1.");
 
             dragDistanceThreshold = config.Bind("Dragging", "DragDistanceThreshold", 1000f, "Replaces the game's drag distance threshold. Set to 600 to restore the original value.");
+            quickTransferKey = config.Bind("Quick Transfer", "QuickTransferKey", KeyCode.LeftControl, "Key used to quickly transfer items between containers.");
         }
 
         [HarmonyPatch(typeof(PlayerCamera), "OpenContainer")]
@@ -188,5 +191,166 @@ namespace ContainerTweaks.Patch
                 rectTransform.anchoredPosition = new Vector2(StartX + (float)column * CellSpacing, StartY - (float)row * CellSpacing);
             }
         }
+
+        [HarmonyPatch(typeof(PlayerCamera), "TryPerformInventoryAction")]
+		[HarmonyPrefix]
+        private static bool TryPerformInventoryAction_Prefix(PlayerCamera __instance, RaycastResult hit, List<RaycastResult> uiCasts, ref bool __result)
+        {
+            if (!Input.GetKey(quickTransferKey.Value))
+            {
+                return true;
+            }
+
+            InvButton invButton = hit.gameObject.GetComponent<InvButton>();
+            if (invButton == null || !invButton.Overlaps(uiCasts))
+            {
+                Logger.LogInfo("No valid target button.");
+                return true;
+            }
+
+            Item dragItem = __instance.dragItem;
+            Item targetItem = invButton.GetItem();
+
+            if (dragItem == targetItem || dragItem == null || targetItem == null)
+            {
+                Logger.LogInfo("Invalid drag or target item.");
+                return true;
+            }
+
+            Container targetContainer = targetItem.GetComponent<Container>();
+            WaterContainerItem targetWaterContainer = targetItem.GetComponent<WaterContainerItem>();
+            if (targetContainer == null && targetWaterContainer == null)
+            {
+                Logger.LogInfo("Target container is null.");
+                return true;
+            }
+
+            if (targetContainer != null && !targetContainer.CanHoldItem(dragItem))
+            {
+                Logger.LogInfo("Target container cannot hold the dragged item.");
+                return true;
+            }
+
+            Container sourceContainer = dragItem.ParentContainer();
+            WaterContainerItem sourceWaterContainer = dragItem.GetComponent<WaterContainerItem>();
+            if (sourceContainer == null && sourceWaterContainer == null)
+            {
+                Logger.LogInfo("Source container is null.");
+                return true;
+            }
+
+            __result = true;
+            var transferList = new List<Item> { dragItem };
+            // Items in container A -> container B
+            if (targetContainer != null && sourceContainer != null && sourceWaterContainer == null)
+            {
+                foreach (Transform child in sourceContainer.transform)
+                {
+                    Item childItem = child.GetComponent<Item>();
+                    if (childItem != null && childItem != dragItem && childItem.Stats.fullName == dragItem.Stats.fullName)
+                    {
+                        transferList.Add(childItem);
+                    }
+                }
+            }
+            // Water containers in container A -> container B
+            else if (targetContainer != null && sourceContainer != null && sourceWaterContainer != null)
+            {
+                var liquidTypeList = new List<string>();
+                foreach (LiquidStack liquid in sourceWaterContainer.stack)
+                {
+                    liquidTypeList.Add(liquid.liquidId);
+                }
+
+                foreach (Transform child in sourceContainer.transform)
+                {
+                    Item childItem = child.GetComponent<Item>();
+                    if (childItem == null || childItem == dragItem)
+                    {
+                        continue;
+                    }
+                    WaterContainerItem childWaterContainer = child.GetComponent<WaterContainerItem>();
+                    if (childWaterContainer != null)
+                    {
+                        bool matches = true;
+                        foreach (string liquidType in liquidTypeList)
+                        {
+                            if (!childWaterContainer.HasLiquid(liquidType))
+                            {
+                                matches = false;
+                                break;
+                            }
+                        }
+                        if (matches)
+                        {
+                            transferList.Add(childItem);
+                        }
+                    }
+                }
+            }
+            // Water container A -> water container B
+            else if (targetWaterContainer != null && sourceWaterContainer != null)
+            {
+                transferList.Clear();
+                if (sourceWaterContainer.CurrentTotal == 0f || targetWaterContainer.SpaceLeft == 0f)
+                {
+                    Logger.LogInfo("No space to transfer liquids or source container is empty.");
+                    return true;
+                }
+
+                bool matches = true;
+                var sourceLiquidTypeList = new List<string>();
+                foreach (LiquidStack liquid in sourceWaterContainer.stack)
+                {
+                    sourceLiquidTypeList.Add(liquid.liquidId);
+                }
+                Logger.LogInfo($"Source liquid types: {string.Join(", ", sourceLiquidTypeList)}");
+                if (targetWaterContainer.CurrentTotal != 0f)
+                {
+                    var targetLiquidTypeList = new List<string>();
+                    foreach (LiquidStack liquid in targetWaterContainer.stack)
+                    {
+                        targetLiquidTypeList.Add(liquid.liquidId);
+                    }
+                    Logger.LogInfo($"Target liquid types: {string.Join(", ", targetLiquidTypeList)}");
+                    foreach (string liquidType in sourceLiquidTypeList)
+                    {
+                        if (!targetLiquidTypeList.Contains(liquidType))
+                        {
+                            matches = false;
+                            Logger.LogInfo($"Target container is missing liquid type: {liquidType}");
+                            break;
+                        }
+                    }
+                    foreach (string liquidType in targetLiquidTypeList)
+                    {
+                        if (!sourceLiquidTypeList.Contains(liquidType))
+                        {
+                            matches = false;
+                            Logger.LogInfo($"Source container is missing liquid type: {liquidType}");
+                            break;
+                        }
+                    }
+                }
+                
+                if (matches)
+                {
+                    Logger.LogInfo("Transferring liquids between water containers.");
+                    float transferAmount = Mathf.Min(sourceWaterContainer.CurrentTotal, targetWaterContainer.SpaceLeft);
+                    __instance.body.CombineLiquids(targetWaterContainer, sourceWaterContainer, transferAmount);
+                }
+                invButton.UpdateGraphic();
+            }
+
+            foreach (Item item in transferList)
+            {
+                sourceContainer.UnloadItem(item);
+                targetContainer.LoadItem(item);
+            }
+            return false;
+
+        }
+
+        
     }
 }

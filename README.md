@@ -12,6 +12,10 @@ ContainerTweaks is a BepInEx plugin for **Casualties: Unknown Demo** that improv
 - Expands the container grid from 3 columns to 6 columns by default.
 - Adds mouse wheel scrolling for containers with more items than the visible area.
 - Keeps the expanded container area from closing unexpectedly while interacting with it.
+- Adds a configurable quick-transfer hotkey (default: <kbd>LeftControl</kbd>) for moving matching items between containers (e.g. move a 9mm rounds from a plastic bag to a bandolier while holding <kbd>LeftControl</kbd> will transfer all 9mm rounds int the plastic bag to the bandolier) and quick liquid transfer between compatible water containers.
+- Compatible water containers:
+  - From any non-empty container to an empty container
+  - Containers with same liquid types (ignoring liquid ratios)
 - Provides BepInEx configuration entries for grid layout, scrolling, and drag threshold values.
 
 ## Configuration
@@ -32,7 +36,29 @@ Available options:
 | `Scrolling` | `ScrollStep` | `64` | Scroll distance per mouse wheel notch. |
 | `Scrolling` | `ScrollLerpSpeed` | `20` | Scroll smoothing speed. |
 | `Dragging` | `DragDistanceThreshold` | `1000` | Drag distance threshold. Set to `600` to restore the original game value. |
+| `Quick Transfer` | `QuickTransferKey` | `LeftControl` | Hold this key while dropping an item onto a target container to quickly transfer matching items or compatible liquids. |
 
+## Quick Transfer
+
+Hold the configured quick-transfer key while dragging an item onto another container item.
+
+- For normal items, matching items with the same full name are moved from the source container to the target container.
+- For water containers inside a container, matching water containers with the same liquid types can be moved together.
+- When dragging one water container onto another water container, compatible liquids are transferred up to the target container's remaining capacity.
+- The target container must be able to hold the dragged item.
+
+## Changelog
+
+### v1.1.0
+
+- Added configurable quick-transfer hotkey, defaulting to `LeftControl`.
+- Added batch transfer for matching items between containers.
+- Added support for transferring compatible liquids between water containers.
+
+### v1.0.0
+
+- Expanded the container grid.
+- Added container scrolling.
 
 ## Installation
 
