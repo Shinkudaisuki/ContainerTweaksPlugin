@@ -51,6 +51,31 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 - For shotgun ammo, all shotgun ammo in the source container/12gauge box is loaded into the target shotgun.
 - The target container must be able to hold the dragged item.
 
+## Installation
+
+1. Install BepInEx for **Casualties: Unknown Demo**.
+2. Build or obtain `ContainerTweaks.dll`.
+3. Copy `ContainerTweaks.dll` to the game's BepInEx plugins folder:
+   - `BepInEx/plugins/ContainerTweaks.dll`
+4. Start the game.
+
+## Know issues
+
+- The background and volumn bar of the container view won't scale with the number of columns. Because I can't figure out how they are drawn.
+- The simi-transparent strip indicates closing inventory view won't scale for the same reasion above. But since the drop feature of the base game still works, I'd like to call this a feature ;) .
+
+## Feature updates
+
+- Add dedicated support for the multiplayer mod.
+
+## Credits
+
+The container scrolling implementation references code from [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown).
+
+Because QoL-Unknown does not support the latest current version (v7.1) of the game by the time this plugin was created, the container scrolling feature was ported into this plugin.
+
+Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
+
 ## Changelog
 
 ### v1.2.0
@@ -69,22 +94,6 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 
 - Expanded the container grid.
 - Added container scrolling.
-
-## Installation
-
-1. Install BepInEx for **Casualties: Unknown Demo**.
-2. Build or obtain `ContainerTweaks.dll`.
-3. Copy `ContainerTweaks.dll` to the game's BepInEx plugins folder:
-   - `BepInEx/plugins/ContainerTweaks.dll`
-4. Start the game.
-
-## Credits
-
-The container scrolling implementation references code from [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown).
-
-Because QoL-Unknown does not support the latest current version (v7.1) of the game by the time this plugin was created, the container scrolling feature was ported into this plugin.
-
-Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
 
 ## License
 

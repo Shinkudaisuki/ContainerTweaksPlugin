@@ -51,6 +51,31 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 - 霰弹枪子弹：将所在容器（包括12号霰弹盒）的所有子弹装填进目标霰弹枪。
 - 目标容器必须能够容纳被拖拽的物品。
 
+## 安装
+
+1. 为 **未知伤亡** 安装 BepInEx。
+2. 构建或获取 `ContainerTweaks.dll`。
+3. 将 `ContainerTweaks.dll` 复制到游戏的 BepInEx 插件目录：
+   - `BepInEx/plugins/ContainerTweaks.dll`
+4. 启动游戏。
+
+## 已知问题
+
+- 容器视图的背景和顶端的容量条不会随着列数的变化而变化。因为我找不到它们是如何被绘制的。
+- 两端表示关闭容器的半透明区域也不会随着列数的变化而变化，原因同上。但原游戏的丢弃物品功能仍然有效，所以这叫特性 =￣ω￣=。
+
+## 更新计划
+
+- 添加对联机模组的专门支持。
+
+## 致谢
+
+容器滚动功能的实现参考了 [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown)。
+
+由于 QoL-Unknown 在本插件创建时尚不支持游戏的最新版本 v7.1，本插件移植了其中的容器滚动功能。
+
+感谢 QoL-Unknown 的原作者。如果原作者希望，本项目可以移除相关参考或移植代码。
+
 ## 更新日志
 
 ### v1.2.0
@@ -69,22 +94,6 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 
 - 扩展容器网格
 - 添加容器滚动功能
-
-## 安装
-
-1. 为 **未知伤亡** 安装 BepInEx。
-2. 构建或获取 `ContainerTweaks.dll`。
-3. 将 `ContainerTweaks.dll` 复制到游戏的 BepInEx 插件目录：
-   - `BepInEx/plugins/ContainerTweaks.dll`
-4. 启动游戏。
-
-## 致谢
-
-容器滚动功能的实现参考了 [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown)。
-
-由于 QoL-Unknown 在本插件创建时尚不支持游戏的最新版本 v7.1，本插件移植了其中的容器滚动功能。
-
-感谢 QoL-Unknown 的原作者。如果原作者希望，本项目可以移除相关参考或移植代码。
 
 ## 许可证
 
