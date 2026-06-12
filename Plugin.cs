@@ -9,7 +9,7 @@ using System.Reflection.Emit;
 
 namespace ContainerTweaks
 {
-    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.1.0")]
+    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.2.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log { get; private set; }
@@ -53,6 +53,16 @@ namespace ContainerTweaks.Patch
         private static float ScrollStep { get { return Mathf.Max(1f, scrollStep.Value); } }
         private static float ScrollLerpSpeed { get { return Mathf.Max(1f, scrollLerpSpeed.Value); } }
         private static float DragDistanceThreshold { get { return Mathf.Max(0f, dragDistanceThreshold.Value); } }
+
+        enum TransferType
+        {
+            None,
+            Item,
+            Liquid,
+            Magazine,
+            ShotgunRound,
+            ShotgunBox
+        }
 
         public static void Initialize(ManualLogSource logger, ConfigFile config)
         {
@@ -196,150 +206,254 @@ namespace ContainerTweaks.Patch
 		[HarmonyPrefix]
         private static bool TryPerformInventoryAction_Prefix(PlayerCamera __instance, RaycastResult hit, List<RaycastResult> uiCasts, ref bool __result)
         {
-            if (!Input.GetKey(quickTransferKey.Value))
+            if (!ShouldHandleQuickTransfer())
             {
                 return true;
             }
 
             InvButton invButton = hit.gameObject.GetComponent<InvButton>();
-            if (invButton == null || !invButton.Overlaps(uiCasts))
+            if (!TryGetValidTransferContext(__instance, invButton, uiCasts, out TransferType transferType, out Item dragItem, out Item targetItem, out Container sourceContainer, out Container targetContainer, out WaterContainerItem sourceWaterContainer, out WaterContainerItem targetWaterContainer, out AmmoScript dragAmmo, out AmmoScript targetAmmo, out GunScript targetGun))
             {
-                Logger.LogInfo("No valid target button.");
-                return true;
-            }
-
-            Item dragItem = __instance.dragItem;
-            Item targetItem = invButton.GetItem();
-
-            if (dragItem == targetItem || dragItem == null || targetItem == null)
-            {
-                Logger.LogInfo("Invalid drag or target item.");
-                return true;
-            }
-
-            Container targetContainer = targetItem.GetComponent<Container>();
-            WaterContainerItem targetWaterContainer = targetItem.GetComponent<WaterContainerItem>();
-            if (targetContainer == null && targetWaterContainer == null)
-            {
-                Logger.LogInfo("Target container is null.");
-                return true;
-            }
-
-            if (targetContainer != null && !targetContainer.CanHoldItem(dragItem))
-            {
-                Logger.LogInfo("Target container cannot hold the dragged item.");
-                return true;
-            }
-
-            Container sourceContainer = dragItem.ParentContainer();
-            WaterContainerItem sourceWaterContainer = dragItem.GetComponent<WaterContainerItem>();
-            if (sourceContainer == null && sourceWaterContainer == null)
-            {
-                Logger.LogInfo("Source container is null.");
                 return true;
             }
 
             __result = true;
+
+            switch (transferType)
+            {
+                case TransferType.None:
+                    return true;
+                case TransferType.Item:
+                {
+                    List<Item> transferList = BuildTransferList(dragItem, sourceContainer, targetContainer, sourceWaterContainer, targetWaterContainer);
+                    TransferItems(sourceContainer, targetContainer, transferList);
+                    return false;
+                }
+                case TransferType.Liquid:
+                    TryTransferBetweenWaterContainers(__instance, invButton, sourceWaterContainer, targetWaterContainer);
+                    return false;
+                case TransferType.Magazine:
+                    TryTransferBetweenMagazines(dragAmmo, targetAmmo);
+                    return false;
+                case TransferType.ShotgunRound:
+                    TryTransfer12gaugeRounds(sourceContainer, targetGun);
+                    return false;
+                case TransferType.ShotgunBox:
+                    TryTransfer12gaugeBox(dragAmmo, targetGun);
+                    return false;
+            }
+
+            return false;
+
+        }
+
+        private static bool ShouldHandleQuickTransfer()
+        {
+            return Input.GetKey(quickTransferKey.Value);
+        }
+
+        private static bool TryGetValidTransferContext(PlayerCamera camera, InvButton invButton, List<RaycastResult> uiCasts, 
+            out TransferType transferType,
+            out Item dragItem, out Item targetItem, out Container sourceContainer, out Container targetContainer, 
+            out WaterContainerItem sourceWaterContainer, out WaterContainerItem targetWaterContainer, 
+            out AmmoScript dragAmmo, out AmmoScript targetAmmo, out GunScript targetGun)
+        {
+            transferType = TransferType.None;
+            dragItem = null;
+            targetItem = null;
+            sourceContainer = null;
+            targetContainer = null;
+            sourceWaterContainer = null;
+            targetWaterContainer = null;
+            dragAmmo = null;
+            targetAmmo = null;
+            targetGun = null;
+
+            if (invButton == null || !invButton.Overlaps(uiCasts))
+            {
+                return false;
+            }
+
+            dragItem = camera.dragItem;
+            targetItem = invButton.GetItem();
+            if (dragItem == null || targetItem == null || dragItem == targetItem)
+            {
+                return false;
+            }
+
+            dragAmmo = dragItem.GetComponent<AmmoScript>();
+            targetAmmo = targetItem.GetComponent<AmmoScript>();
+            if (dragAmmo != null && targetAmmo != null && dragAmmo.itemType == AmmoScript.AmmoItemType.Magazine && targetAmmo.itemType == AmmoScript.AmmoItemType.Magazine && dragAmmo.ammoType == targetAmmo.ammoType)
+            {
+                transferType = TransferType.Magazine;
+            }
+
+            targetContainer = targetItem.GetComponent<Container>();
+            targetWaterContainer = targetItem.GetComponent<WaterContainerItem>();
+            sourceContainer = dragItem.ParentContainer();
+            sourceWaterContainer = dragItem.GetComponent<WaterContainerItem>();
+            if (targetContainer != null && sourceContainer != null && targetContainer.CanHoldItem(dragItem))
+            {
+                transferType = TransferType.Item;
+            }
+            if (targetWaterContainer != null && sourceWaterContainer != null)
+            {
+                transferType = TransferType.Liquid;
+            }
+
+            targetGun = targetItem.GetComponent<GunScript>();
+            if (targetGun != null && dragAmmo != null && sourceContainer != null && dragAmmo.ammoType == GunScript.AmmoType.Shotgun && 
+                dragAmmo.itemType == AmmoScript.AmmoItemType.Round && targetGun.ammoType == GunScript.AmmoType.Shotgun)
+            {
+                transferType = TransferType.ShotgunRound;
+            }
+            if (targetGun != null && dragAmmo != null && dragAmmo.ammoType == GunScript.AmmoType.Shotgun && 
+                dragAmmo.itemType == AmmoScript.AmmoItemType.Magazine && targetGun.ammoType == GunScript.AmmoType.Shotgun)
+            {
+                transferType = TransferType.ShotgunBox;
+            }
+
+            return transferType != TransferType.None;
+        }
+
+        private static List<Item> BuildTransferList(Item dragItem, Container sourceContainer, Container targetContainer, WaterContainerItem sourceWaterContainer, WaterContainerItem targetWaterContainer)
+        {
             var transferList = new List<Item> { dragItem };
-            // Items in container A -> container B
+
             if (targetContainer != null && sourceContainer != null && sourceWaterContainer == null)
             {
-                foreach (Transform child in sourceContainer.transform)
-                {
-                    Item childItem = child.GetComponent<Item>();
-                    if (childItem != null && childItem != dragItem && childItem.Stats.fullName == dragItem.Stats.fullName)
-                    {
-                        transferList.Add(childItem);
-                    }
-                }
+                AddMatchingItemsByName(transferList, sourceContainer, dragItem);
             }
-            // Water containers in container A -> container B
             else if (targetContainer != null && sourceContainer != null && sourceWaterContainer != null)
             {
-                var liquidTypeList = new List<string>();
-                foreach (LiquidStack liquid in sourceWaterContainer.stack)
-                {
-                    liquidTypeList.Add(liquid.liquidId);
-                }
+                AddMatchingWaterContainers(transferList, sourceContainer, dragItem, sourceWaterContainer);
+            }
 
-                foreach (Transform child in sourceContainer.transform)
+            return transferList;
+        }
+
+        private static void AddMatchingItemsByName(List<Item> transferList, Container sourceContainer, Item dragItem)
+        {
+            foreach (Transform child in sourceContainer.transform)
+            {
+                Item childItem = child.GetComponent<Item>();
+                if (childItem != null && childItem != dragItem && childItem.Stats.fullName == dragItem.Stats.fullName)
                 {
-                    Item childItem = child.GetComponent<Item>();
-                    if (childItem == null || childItem == dragItem)
-                    {
-                        continue;
-                    }
-                    WaterContainerItem childWaterContainer = child.GetComponent<WaterContainerItem>();
-                    if (childWaterContainer != null)
-                    {
-                        bool matches = true;
-                        foreach (string liquidType in liquidTypeList)
-                        {
-                            if (!childWaterContainer.HasLiquid(liquidType))
-                            {
-                                matches = false;
-                                break;
-                            }
-                        }
-                        if (matches)
-                        {
-                            transferList.Add(childItem);
-                        }
-                    }
+                    transferList.Add(childItem);
                 }
             }
-            // Water container A -> water container B
-            else if (targetWaterContainer != null && sourceWaterContainer != null)
+        }
+
+        private static void AddMatchingWaterContainers(List<Item> transferList, Container sourceContainer, Item dragItem, WaterContainerItem sourceWaterContainer)
+        {
+            var liquidTypeList = new List<string>();
+            foreach (LiquidStack liquid in sourceWaterContainer.stack)
             {
-                transferList.Clear();
-                if (sourceWaterContainer.CurrentTotal == 0f || targetWaterContainer.SpaceLeft == 0f)
+                liquidTypeList.Add(liquid.liquidId);
+            }
+
+            foreach (Transform child in sourceContainer.transform)
+            {
+                Item childItem = child.GetComponent<Item>();
+                if (childItem == null || childItem == dragItem)
                 {
-                    Logger.LogInfo("No space to transfer liquids or source container is empty.");
-                    return true;
+                    continue;
                 }
 
-                bool matches = true;
-                var sourceLiquidTypeList = new List<string>();
-                foreach (LiquidStack liquid in sourceWaterContainer.stack)
+                WaterContainerItem childWaterContainer = child.GetComponent<WaterContainerItem>();
+                if (childWaterContainer != null && HasAllLiquids(childWaterContainer, liquidTypeList))
                 {
-                    sourceLiquidTypeList.Add(liquid.liquidId);
+                    transferList.Add(childItem);
                 }
-                Logger.LogInfo($"Source liquid types: {string.Join(", ", sourceLiquidTypeList)}");
-                if (targetWaterContainer.CurrentTotal != 0f)
+            }
+        }
+
+        private static bool HasAllLiquids(WaterContainerItem waterContainer, List<string> liquidTypeList)
+        {
+            foreach (string liquidType in liquidTypeList)
+            {
+                if (!waterContainer.HasLiquid(liquidType))
                 {
-                    var targetLiquidTypeList = new List<string>();
-                    foreach (LiquidStack liquid in targetWaterContainer.stack)
-                    {
-                        targetLiquidTypeList.Add(liquid.liquidId);
-                    }
-                    Logger.LogInfo($"Target liquid types: {string.Join(", ", targetLiquidTypeList)}");
-                    foreach (string liquidType in sourceLiquidTypeList)
-                    {
-                        if (!targetLiquidTypeList.Contains(liquidType))
-                        {
-                            matches = false;
-                            Logger.LogInfo($"Target container is missing liquid type: {liquidType}");
-                            break;
-                        }
-                    }
-                    foreach (string liquidType in targetLiquidTypeList)
-                    {
-                        if (!sourceLiquidTypeList.Contains(liquidType))
-                        {
-                            matches = false;
-                            Logger.LogInfo($"Source container is missing liquid type: {liquidType}");
-                            break;
-                        }
-                    }
+                    return false;
                 }
-                
-                if (matches)
-                {
-                    Logger.LogInfo("Transferring liquids between water containers.");
-                    float transferAmount = Mathf.Min(sourceWaterContainer.CurrentTotal, targetWaterContainer.SpaceLeft);
-                    __instance.body.CombineLiquids(targetWaterContainer, sourceWaterContainer, transferAmount);
-                }
+            }
+
+            return true;
+        }
+
+        private static bool TryTransferBetweenWaterContainers(PlayerCamera camera, InvButton invButton, WaterContainerItem sourceWaterContainer, WaterContainerItem targetWaterContainer)
+        {
+            if (sourceWaterContainer == null || targetWaterContainer == null)
+            {
+                return false;
+            }
+
+            if (sourceWaterContainer.CurrentTotal == 0f || targetWaterContainer.SpaceLeft == 0f)
+            {
+                return true;
+            }
+
+            if (!CanCombineLiquids(sourceWaterContainer, targetWaterContainer))
+            {
                 invButton.UpdateGraphic();
+                return true;
+            }
+
+            float transferAmount = Mathf.Min(sourceWaterContainer.CurrentTotal, targetWaterContainer.SpaceLeft);
+            camera.body.CombineLiquids(targetWaterContainer, sourceWaterContainer, transferAmount);
+            invButton.UpdateGraphic();
+            return true;
+        }
+
+        private static bool CanCombineLiquids(WaterContainerItem sourceWaterContainer, WaterContainerItem targetWaterContainer)
+        {
+            var sourceLiquidTypeList = GetLiquidTypeList(sourceWaterContainer);
+            if (targetWaterContainer.CurrentTotal == 0f)
+            {
+                return true;
+            }
+
+            var targetLiquidTypeList = GetLiquidTypeList(targetWaterContainer);
+            return ContainsSameLiquids(sourceLiquidTypeList, targetLiquidTypeList);
+        }
+
+        private static List<string> GetLiquidTypeList(WaterContainerItem waterContainer)
+        {
+            var liquidTypeList = new List<string>();
+            foreach (LiquidStack liquid in waterContainer.stack)
+            {
+                liquidTypeList.Add(liquid.liquidId);
+            }
+
+            return liquidTypeList;
+        }
+
+        private static bool ContainsSameLiquids(List<string> sourceLiquidTypeList, List<string> targetLiquidTypeList)
+        {
+            foreach (string liquidType in sourceLiquidTypeList)
+            {
+                if (!targetLiquidTypeList.Contains(liquidType))
+                {
+                    return false;
+                }
+            }
+
+            foreach (string liquidType in targetLiquidTypeList)
+            {
+                if (!sourceLiquidTypeList.Contains(liquidType))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void TransferItems(Container sourceContainer, Container targetContainer, List<Item> transferList)
+        {
+            if (sourceContainer == null || targetContainer == null)
+            {
+                return;
             }
 
             foreach (Item item in transferList)
@@ -347,10 +461,122 @@ namespace ContainerTweaks.Patch
                 sourceContainer.UnloadItem(item);
                 targetContainer.LoadItem(item);
             }
-            return false;
-
         }
 
-        
+        private static bool TryTransferBetweenMagazines(AmmoScript sourceMagazine, AmmoScript targetMagazine)
+        {
+            if (sourceMagazine == null || targetMagazine == null)
+            {
+                return false;
+            }
+
+            if (sourceMagazine.ammoType != targetMagazine.ammoType || sourceMagazine.itemType != AmmoScript.AmmoItemType.Magazine || targetMagazine.itemType != AmmoScript.AmmoItemType.Magazine)
+            {
+                return false;
+            }
+
+            int transferAmount = Mathf.Min(sourceMagazine.rounds, targetMagazine.maxRounds - targetMagazine.rounds);
+            if (transferAmount <= 0)
+            {
+                return true;
+            }
+
+            sourceMagazine.rounds -= transferAmount;
+            targetMagazine.rounds += transferAmount;
+            Sound.Play("gunloadshell", targetMagazine.transform.position, false, true, null, 1f, 1f, false, false);
+            return true;
+        }
+
+        private static bool TryTransfer12gaugeRounds(Container sourceContainer, GunScript targetGun)
+        {
+            foreach (Transform child in sourceContainer.transform)
+            {
+                if (targetGun.roundsInMag >= targetGun.magCapacity)
+                {
+                    break;
+                }
+                AmmoScript childAmmo = child.GetComponent<AmmoScript>();
+                if (childAmmo != null && childAmmo.itemType == AmmoScript.AmmoItemType.Round && childAmmo.ammoType == GunScript.AmmoType.Shotgun)
+                {
+                    if (targetGun.racked && targetGun.roundInChamber == GunScript.RoundInChamber.None)
+                    {
+                        targetGun.roundInChamber = GunScript.RoundInChamber.Round;
+                    }
+                    else
+                    {
+                        targetGun.roundsInMag++;
+                    }
+                    Object.Destroy(childAmmo.gameObject);
+                }
+            }
+            Sound.Play("gunloadshell", targetGun.transform.position, false, true, null, 1f, 1f, false, false);
+            return true;
+        }
+
+        private static bool TryTransfer12gaugeBox(AmmoScript sourceBox, GunScript targetGun)
+        {
+            int roundsToLoad = Mathf.Min(sourceBox.rounds, targetGun.magCapacity - targetGun.roundsInMag);
+            if (roundsToLoad <= 0)
+            {
+                return true;
+            }
+            sourceBox.rounds -= roundsToLoad;
+            if (targetGun.racked && targetGun.roundInChamber == GunScript.RoundInChamber.None)
+            {
+                targetGun.roundInChamber = GunScript.RoundInChamber.Round;
+                roundsToLoad--;
+            }
+            targetGun.roundsInMag += roundsToLoad;
+            Sound.Play("gunloadshell", targetGun.transform.position, false, true, null, 1f, 1f, false, false);
+            return true;
+        }
+
+        [HarmonyPatch(typeof(AmmoScript), "LoadRound")]
+        [HarmonyPrefix]
+        private static bool LoadRound_Prefix(AmmoScript __instance, AmmoScript ammo)
+        {
+            if (!Input.GetKey(quickTransferKey.Value))
+            {
+                return true;
+            }
+
+            if (ammo.itemType == AmmoScript.AmmoItemType.Round && __instance.itemType == AmmoScript.AmmoItemType.Magazine && ammo.ammoType == __instance.ammoType && __instance.rounds < __instance.maxRounds)
+            {
+                var ammoList = new List<AmmoScript> { ammo };
+                Item sourceItem = ammo.GetComponent<Item>();
+                if (sourceItem == null)
+                {
+                    Logger.LogInfo("Source item is null.");
+                    return true;
+                }
+                Container sourceContainer = sourceItem.ParentContainer();
+                if (sourceContainer == null)
+                {
+                    Logger.LogInfo("Source container is null.");
+                    return true;
+                }
+                foreach (Transform child in sourceContainer.transform)
+                {
+                    AmmoScript childAmmo = child.GetComponent<AmmoScript>();
+                    if (childAmmo != null && childAmmo != ammo && childAmmo.itemType == AmmoScript.AmmoItemType.Round && childAmmo.ammoType == ammo.ammoType)
+                    {
+                        ammoList.Add(childAmmo);
+                    }
+                }
+                foreach (AmmoScript ammoScript in ammoList)
+                {
+                    if (__instance.rounds >= __instance.maxRounds)
+                    {
+                        break;
+                    }
+                    __instance.rounds++;
+                    Object.Destroy(ammoScript.gameObject);
+                }
+                Sound.Play("gunloadshell", __instance.transform.position, false, true, null, 1f, 1f, false, false);
+                return false;
+            }
+
+            return true;
+        }
     }
 }

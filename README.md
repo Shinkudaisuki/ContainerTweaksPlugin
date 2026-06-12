@@ -12,10 +12,11 @@ ContainerTweaks is a BepInEx plugin for **Casualties: Unknown Demo** that improv
 - Expands the container grid from 3 columns to 6 columns by default.
 - Adds mouse wheel scrolling for containers with more items than the visible area.
 - Keeps the expanded container area from closing unexpectedly while interacting with it.
-- Adds a configurable quick-transfer hotkey (default: <kbd>LeftControl</kbd>) for moving matching items between containers (e.g. move a 9mm rounds from a plastic bag to a bandolier while holding <kbd>LeftControl</kbd> will transfer all 9mm rounds int the plastic bag to the bandolier) and quick liquid transfer between compatible water containers.
-- Compatible water containers:
-  - From any non-empty container to an empty container
-  - Containers with same liquid types (ignoring liquid ratios)
+- Adds a configurable quick-transfer hotkey (default: <kbd>LeftControl</kbd>) for moving matching items between containers.
+- Supports quick liquid transfer between compatible water containers.
+- Supports quick magazine-to-magazine transfers for the same ammo type.
+- Supports quick shotgun round loading and shotgun box loading.
+- Supports quick loading rounds into a magazine.
 - Provides BepInEx configuration entries for grid layout, scrolling, and drag threshold values.
 
 ## Configuration
@@ -40,14 +41,23 @@ Available options:
 
 ## Quick Transfer
 
-Hold the configured quick-transfer key while dragging an item onto another container item.
+Hold the configured quick-transfer key while dragging an item onto another container-like item.
 
 - For normal items, matching items with the same full name are moved from the source container to the target container.
-- For water containers inside a container, matching water containers with the same liquid types can be moved together.
-- When dragging one water container onto another water container, compatible liquids are transferred up to the target container's remaining capacity.
+- For water containers, **themselves** with same liquid types in the source container are transferred to the target **item** container.
+- For water containers, **liquids** are transferred when the target **water** container is empty or has the same liquid types.
+- For ammo, all rounds of the same type are loaded into the target magazine (including a 12gauge box).
+- For magazines (including 12gauge boxes), rounds are transferred between matching magazines of the same ammo type.
+- For shotgun ammo, all shotgun ammo in the source container/12gauge box is loaded into the target shotgun.
 - The target container must be able to hold the dragged item.
 
 ## Changelog
+
+### v1.2.0
+
+- Added quick magazine-to-magazine transfers for matching ammo types.
+- Added quick shotgun round and shotgun box loading support.
+- Added bulk quick-loading for matching rounds when loading ammo into a magazine.
 
 ### v1.1.0
 
@@ -72,7 +82,7 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 
 The container scrolling implementation references code from [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown).
 
-Because QoL-Unknown does not support the latest current version of the game, the container scrolling feature was ported into this plugin.
+Because QoL-Unknown does not support the latest current version (v7.1) of the game by the time this plugin was created, the container scrolling feature was ported into this plugin.
 
 Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
 
