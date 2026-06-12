@@ -63,6 +63,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Plugin.cs" />
+    <Compile Include="ContainerViewTweaks.cs" />
+    <Compile Include="ContainerScrolling.cs" />
+    <Compile Include="QuickTransfer.cs" />
+    <Compile Include="MpCompat.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   

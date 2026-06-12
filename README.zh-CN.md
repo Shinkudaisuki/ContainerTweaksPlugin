@@ -17,7 +17,8 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 - 支持在相同弹药类型的弹匣之间快速转移子弹。
 - 支持快速装填霰弹枪子弹。
 - 支持向弹匣快速装填子弹。
-- 使用 BepInEx 配置文件调整网格布局、滚动和拖拽阈值。
+- 使用 BepInEx 配置文件调整网格布局、滚动、拖拽阈值，以及各项功能的开关。
+- 支持联机 mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop)。
 
 ## 配置
 
@@ -29,6 +30,9 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 
 | 分组 | 键 | 默认值 | 说明 |
 | --- | --- | --- | --- |
+| `Feature Toggles` | `ContainerViewExpansionEnabled` | `true` | 启用容器网格扩展。 |
+| `Feature Toggles` | `ContainerScrollingEnabled` | `true` | 启用容器视图鼠标滚轮滚动。 |
+| `Feature Toggles` | `QuickTransferEnabled` | `true` | 启用全部快速转移功能。 |
 | `Container Grid` | `ColumnCount` | `6` | 容器网格列数。 |
 | `Container Grid` | `VisibleRowCount` | `5` | 需要滚动前可见的行数。 |
 | `Container Grid` | `CellSpacing` | `64` | 物品格之间的像素间距。 |
@@ -36,8 +40,14 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 | `Container Grid` | `StartY` | `-34.5` | 第一个物品格的锚定 Y 坐标。 |
 | `Scrolling` | `ScrollStep` | `64` | 鼠标滚轮每格滚动的距离。 |
 | `Scrolling` | `ScrollLerpSpeed` | `20` | 滚动平滑速度。 |
-| `Dragging` | `DragDistanceThreshold` | `1000` | 拖拽距离阈值。设置为 `600` 可恢复游戏原始值。 |
+| `Dragging` | `DragDistanceThreshold` | `1000` | 拖拽物品关闭物品栏距离阈值。设置为 `600` 可恢复游戏原始值。 |
 | `Quick Transfer` | `QuickTransferKey` | `LeftControl` | 按住该按键并将物品拖放到目标容器上，可快速转移匹配物品或兼容液体。 |
+| `Quick Transfer` | `ItemTransferEnabled` | `true` | 启用将匹配物品移动到兼容目标容器。 |
+| `Quick Transfer` | `LiquidTransferEnabled` | `true` | 启用兼容液体容器之间的液体转移。 |
+| `Quick Transfer` | `MagazineTransferEnabled` | `true` | 启用相同弹药类型弹匣之间转移子弹。 |
+| `Quick Transfer` | `ShotgunRoundLoadEnabled` | `true` | 启用从源容器向霰弹枪装填霰弹枪子弹。 |
+| `Quick Transfer` | `ShotgunBoxLoadEnabled` | `true` | 启用从霰弹枪弹盒向霰弹枪装填子弹。 |
+| `Quick Transfer` | `MagazineQuickLoadEnabled` | `true` | 启用向弹匣快速装填匹配散装子弹。 |
 
 ## 快速转移
 
@@ -64,10 +74,6 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 - 容器视图的背景和顶端的容量条不会随着列数的变化而变化。因为我找不到它们是如何被绘制的。
 - 两端表示关闭容器的半透明区域也不会随着列数的变化而变化，原因同上。但原游戏的丢弃物品功能仍然有效，所以这叫特性 =￣ω￣=。
 
-## 更新计划
-
-- 添加对联机模组的专门支持。
-
 ## 致谢
 
 容器滚动功能的实现参考了 [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown)。
@@ -77,6 +83,12 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 感谢 QoL-Unknown 的原作者。如果原作者希望，本项目可以移除相关参考或移植代码。
 
 ## 更新日志
+
+### v1.3.0
+
+- 支持联机 mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop)。
+- 在配置文件中添加各项功能的开关。
+- 重构项目。
 
 ### v1.2.0
 

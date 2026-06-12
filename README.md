@@ -17,7 +17,8 @@ ContainerTweaks is a BepInEx plugin for **Casualties: Unknown Demo** that improv
 - Supports quick magazine-to-magazine transfers for the same ammo type.
 - Supports quick shotgun round loading and shotgun box loading.
 - Supports quick loading rounds into a magazine.
-- Provides BepInEx configuration entries for grid layout, scrolling, and drag threshold values.
+- Provides BepInEx configuration entries for grid layout, scrolling, drag threshold values, and enabling / disabling specific features.
+- Supports multiplayer mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop).
 
 ## Configuration
 
@@ -29,6 +30,9 @@ Available options:
 
 | Section | Key | Default | Description |
 | --- | --- | --- | --- |
+| `Feature Toggles` | `ContainerViewExpansionEnabled` | `true` | Enable expanded container grid layout. |
+| `Feature Toggles` | `ContainerScrollingEnabled` | `true` | Enable mouse wheel scrolling in container views. |
+| `Feature Toggles` | `QuickTransferEnabled` | `true` | Enable all quick transfer features. |
 | `Container Grid` | `ColumnCount` | `6` | Number of columns in the container grid. |
 | `Container Grid` | `VisibleRowCount` | `5` | Number of visible rows before scrolling is needed. |
 | `Container Grid` | `CellSpacing` | `64` | Pixel spacing between item cells. |
@@ -36,8 +40,14 @@ Available options:
 | `Container Grid` | `StartY` | `-34.5` | Anchored Y position of the first item cell. |
 | `Scrolling` | `ScrollStep` | `64` | Scroll distance per mouse wheel notch. |
 | `Scrolling` | `ScrollLerpSpeed` | `20` | Scroll smoothing speed. |
-| `Dragging` | `DragDistanceThreshold` | `1000` | Drag distance threshold. Set to `600` to restore the original game value. |
+| `Dragging` | `DragDistanceThreshold` | `1000` | Drag distance threshold of closing inventory view. Set to `600` to restore the original game value. |
 | `Quick Transfer` | `QuickTransferKey` | `LeftControl` | Hold this key while dropping an item onto a target container to quickly transfer matching items or compatible liquids. |
+| `Quick Transfer` | `ItemTransferEnabled` | `true` | Enable moving matching items into compatible target containers. |
+| `Quick Transfer` | `LiquidTransferEnabled` | `true` | Enable transferring liquid between compatible liquid containers. |
+| `Quick Transfer` | `MagazineTransferEnabled` | `true` | Enable moving rounds between magazines of the same ammo type. |
+| `Quick Transfer` | `ShotgunRoundLoadEnabled` | `true` | Enable loading shotgun rounds from the source container into a shotgun. |
+| `Quick Transfer` | `ShotgunBoxLoadEnabled` | `true` | Enable loading shotgun shells from shotgun ammo boxes into a shotgun. |
+| `Quick Transfer` | `MagazineQuickLoadEnabled` | `true` | Enable quick loading matching loose rounds into magazines. |
 
 ## Quick Transfer
 
@@ -64,10 +74,6 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 - The background and volumn bar of the container view won't scale with the number of columns. Because I can't figure out how they are drawn.
 - The simi-transparent strip indicates closing inventory view won't scale for the same reasion above. But since the drop feature of the base game still works, I'd like to call this a feature ;) .
 
-## Feature updates
-
-- Add dedicated support for the multiplayer mod.
-
 ## Credits
 
 The container scrolling implementation references code from [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown).
@@ -77,6 +83,12 @@ Because QoL-Unknown does not support the latest current version (v7.1) of the ga
 Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
 
 ## Changelog
+
+### v1.3.0
+
+- Added support for multiplayer mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop).
+- Added feature toggles in the configuration file.
+- Restructure whole project.
 
 ### v1.2.0
 
