@@ -78,7 +78,7 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 
 容器滚动功能的实现参考了 [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown)。
 
-由于 QoL-Unknown 在本插件创建时尚不支持游戏的最新版本 v7.1，本插件移植了其中的容器滚动功能。
+由于 QoL-Unknown 在本插件创建时尚不支持游戏的最新版本 v7.0.1，本插件移植了其中的容器滚动功能。
 
 感谢 QoL-Unknown 的原作者。如果原作者希望，本项目可以移除相关参考或移植代码。
 

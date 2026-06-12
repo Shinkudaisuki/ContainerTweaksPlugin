@@ -78,7 +78,7 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 
 The container scrolling implementation references code from [QoL-Unknown](https://github.com/jimmyking9999999/QoL-Unknown).
 
-Because QoL-Unknown does not support the latest current version (v7.1) of the game by the time this plugin was created, the container scrolling feature was ported into this plugin.
+Because QoL-Unknown does not support the latest current version (v7.0.1) of the game by the time this plugin was created, the container scrolling feature was ported into this plugin.
 
 Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
 
