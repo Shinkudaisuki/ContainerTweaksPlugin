@@ -1,0 +1,41 @@
+name: Upload to Nexus Mods
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog description
+        id: changelog
+        run: |
+          desc=$(awk '/^## Changelog/{f=1;next} f==1&&/^### /{f=2;next} f==2&&/^- /{sub(/^- /,"");print;exit}' README.md)
+          echo "description<<EOF" >> $GITHUB_OUTPUT
+          echo "$desc" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Download release assets
+        run: gh release download "$GITHUB_REF_NAME" --dir release-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Zip mod
+        run: zip -j ContainerTweaks.zip release-assets/*.dll
+
+      - name: Upload to NexusMods
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.7
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_group_id: 7501025
+          filename: ContainerTweaks.zip
+          version: ${{ steps.version.outputs.version }}
+          description: ${{ steps.changelog.outputs.description }}
+          file_category: main
