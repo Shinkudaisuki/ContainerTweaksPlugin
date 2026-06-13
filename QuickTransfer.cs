@@ -98,9 +98,9 @@ namespace ContainerTweaks.Patch
                         }
                         return true;
                     }
-                    case TransferType.ShotgunRound:
+                    case TransferType.DirectFeedRound:
                     {
-                        if (sourceContainer == null || targetGun == null)
+                        if (sourceContainer == null || targetGun == null || targetGun.feedType != GunScript.FeedType.Direct)
                         {
                             return false;
                         }
@@ -114,7 +114,7 @@ namespace ContainerTweaks.Patch
                             }
 
                             AmmoScript childAmmo = child.GetComponent<AmmoScript>();
-                            if (childAmmo != null && childAmmo.itemType == AmmoScript.AmmoItemType.Round && childAmmo.ammoType == GunScript.AmmoType.Shotgun)
+                            if (childAmmo != null && childAmmo.itemType == AmmoScript.AmmoItemType.Round && childAmmo.ammoType == targetGun.ammoType)
                             {
                                 if (targetGun.racked && targetGun.roundInChamber == GunScript.RoundInChamber.None)
                                 {
@@ -145,14 +145,14 @@ namespace ContainerTweaks.Patch
 
                         return true;
                     }
-                    case TransferType.ShotgunBox:
+                    case TransferType.DirectFeedMagazine:
                     {
                         if (dragAmmo == null || targetGun == null)
                         {
                             return false;
                         }
 
-                        if (dragAmmo.ammoType != GunScript.AmmoType.Shotgun || dragAmmo.itemType != AmmoScript.AmmoItemType.Magazine || targetGun.ammoType != GunScript.AmmoType.Shotgun)
+                        if (targetGun.feedType != GunScript.FeedType.Direct || dragAmmo.ammoType != targetGun.ammoType || dragAmmo.itemType != AmmoScript.AmmoItemType.Magazine)
                         {
                             return false;
                         }
@@ -359,15 +359,15 @@ namespace ContainerTweaks.Patch
             }
 
             targetGun = targetItem.GetComponent<GunScript>();
-            if (IsQuickTransferShotgunRoundsEnabled && targetGun != null && dragAmmo != null && sourceContainer != null && dragAmmo.ammoType == GunScript.AmmoType.Shotgun &&
-                dragAmmo.itemType == AmmoScript.AmmoItemType.Round && targetGun.ammoType == GunScript.AmmoType.Shotgun)
+            if (IsQuickTransferDirectFeedRoundsEnabled && targetGun != null && dragAmmo != null && sourceContainer != null && dragAmmo.ammoType == targetGun.ammoType &&
+                dragAmmo.itemType == AmmoScript.AmmoItemType.Round)
             {
-                transferType = TransferType.ShotgunRound;
+                transferType = TransferType.DirectFeedRound;
             }
-            if (IsQuickTransferShotgunBoxesEnabled && targetGun != null && dragAmmo != null && dragAmmo.ammoType == GunScript.AmmoType.Shotgun &&
-                dragAmmo.itemType == AmmoScript.AmmoItemType.Magazine && targetGun.ammoType == GunScript.AmmoType.Shotgun)
+            if (IsQuickTransferDirectFeedMagazinesEnabled && targetGun != null && dragAmmo != null && dragAmmo.ammoType == targetGun.ammoType &&
+                dragAmmo.itemType == AmmoScript.AmmoItemType.Magazine)
             {
-                transferType = TransferType.ShotgunBox;
+                transferType = TransferType.DirectFeedMagazine;
             }
 
             return transferType != TransferType.None;
@@ -383,10 +383,10 @@ namespace ContainerTweaks.Patch
                     return IsQuickTransferLiquidsEnabled;
                 case TransferType.Magazine:
                     return IsQuickTransferMagazinesEnabled;
-                case TransferType.ShotgunRound:
-                    return IsQuickTransferShotgunRoundsEnabled;
-                case TransferType.ShotgunBox:
-                    return IsQuickTransferShotgunBoxesEnabled;
+                case TransferType.DirectFeedRound:
+                    return IsQuickTransferDirectFeedRoundsEnabled;
+                case TransferType.DirectFeedMagazine:
+                    return IsQuickTransferDirectFeedMagazinesEnabled;
                 default:
                     return false;
             }

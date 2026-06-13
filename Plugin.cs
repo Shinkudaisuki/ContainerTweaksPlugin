@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace ContainerTweaks
 {
-    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.3.0")]
+    [BepInPlugin("com.user.containertweaks", "ContainerTweaks Plugin", "1.4.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log { get; private set; }
@@ -41,9 +41,16 @@ namespace ContainerTweaks.Patch
         private static ConfigEntry<bool> quickTransferItemsEnabled;
         private static ConfigEntry<bool> quickTransferLiquidsEnabled;
         private static ConfigEntry<bool> quickTransferMagazinesEnabled;
-        private static ConfigEntry<bool> quickTransferShotgunRoundsEnabled;
-        private static ConfigEntry<bool> quickTransferShotgunBoxesEnabled;
+        private static ConfigEntry<bool> quickTransferDirectFeedRoundsEnabled;
+        private static ConfigEntry<bool> quickTransferDirectFeedMagazinesEnabled;
         private static ConfigEntry<bool> quickLoadMagazineEnabled;
+        private static ConfigEntry<bool> autoHighlightEnabled;
+        private static ConfigEntry<bool> autoHighlightWaterContainerEnabled;
+        private static ConfigEntry<bool> autoHighlightAmmoEnabled;
+        private static ConfigEntry<bool> autoHighlightGunEnabled;
+        private static ConfigEntry<string> highlightColorCompatible;
+        private static ConfigEntry<string> highlightColorFull;
+        private static ConfigEntry<string> highlightColorPartial;
         private static ConfigEntry<int> columnCount;
         private static ConfigEntry<int> visibleRowCount;
         private static ConfigEntry<float> cellSpacing;
@@ -60,9 +67,16 @@ namespace ContainerTweaks.Patch
         private static bool IsQuickTransferItemsEnabled { get { return quickTransferItemsEnabled.Value; } }
         private static bool IsQuickTransferLiquidsEnabled { get { return quickTransferLiquidsEnabled.Value; } }
         private static bool IsQuickTransferMagazinesEnabled { get { return quickTransferMagazinesEnabled.Value; } }
-        private static bool IsQuickTransferShotgunRoundsEnabled { get { return quickTransferShotgunRoundsEnabled.Value; } }
-        private static bool IsQuickTransferShotgunBoxesEnabled { get { return quickTransferShotgunBoxesEnabled.Value; } }
+        private static bool IsQuickTransferDirectFeedRoundsEnabled { get { return quickTransferDirectFeedRoundsEnabled.Value; } }
+        private static bool IsQuickTransferDirectFeedMagazinesEnabled { get { return quickTransferDirectFeedMagazinesEnabled.Value; } }
         private static bool IsQuickLoadMagazineEnabled { get { return quickLoadMagazineEnabled.Value; } }
+        private static bool IsAutoHighlightEnabled { get { return autoHighlightEnabled.Value; } }
+        private static bool IsAutoHighlightWaterContainerEnabled { get { return autoHighlightWaterContainerEnabled.Value; } }
+        private static bool IsAutoHighlightAmmoEnabled { get { return autoHighlightAmmoEnabled.Value; } }
+        private static bool IsAutoHighlightGunEnabled { get { return autoHighlightGunEnabled.Value; } }
+        private static Color HighlightColorCompatible { get { return ParseColor(highlightColorCompatible.Value, Color.green); } }
+        private static Color HighlightColorFull { get { return ParseColor(highlightColorFull.Value, Color.cyan); } }
+        private static Color HighlightColorPartial { get { return ParseColor(highlightColorPartial.Value, Color.yellow); } }
         private static int ColumnCount { get { return Mathf.Max(1, columnCount.Value); } }
         private static int VisibleRowCount { get { return Mathf.Max(1, visibleRowCount.Value); } }
         private static float CellSpacing { get { return Mathf.Max(1f, cellSpacing.Value); } }
@@ -78,8 +92,20 @@ namespace ContainerTweaks.Patch
             Item,
             Liquid,
             Magazine,
-            ShotgunRound,
-            ShotgunBox
+            DirectFeedRound,
+            DirectFeedMagazine
+        }
+
+        private static Color ParseColor(string value, Color fallback)
+        {
+            var parts = value.Split(',');
+            if (parts.Length == 4 &&
+                float.TryParse(parts[0], out float r) &&
+                float.TryParse(parts[1], out float g) &&
+                float.TryParse(parts[2], out float b) &&
+                float.TryParse(parts[3], out float a))
+                return new Color(r, g, b, a);
+            return fallback;
         }
 
         public static void Initialize(ManualLogSource logger, ConfigFile config)
@@ -111,9 +137,17 @@ namespace ContainerTweaks.Patch
             quickTransferItemsEnabled = config.Bind("Quick Transfer", "ItemTransferEnabled", true, "Enable moving matching items into compatible target containers.");
             quickTransferLiquidsEnabled = config.Bind("Quick Transfer", "LiquidTransferEnabled", true, "Enable transferring liquid between compatible liquid containers.");
             quickTransferMagazinesEnabled = config.Bind("Quick Transfer", "MagazineTransferEnabled", true, "Enable moving rounds between magazines of the same ammo type.");
-            quickTransferShotgunRoundsEnabled = config.Bind("Quick Transfer", "ShotgunRoundLoadEnabled", true, "Enable loading shotgun rounds from the source container into a shotgun.");
-            quickTransferShotgunBoxesEnabled = config.Bind("Quick Transfer", "ShotgunBoxLoadEnabled", true, "Enable loading shotgun shells from shotgun ammo boxes into a shotgun.");
+            quickTransferDirectFeedRoundsEnabled = config.Bind("Quick Transfer", "DirectFeedRoundLoadEnabled", true, "Enable loading rounds from the source container into a direct-feed gun.");
+            quickTransferDirectFeedMagazinesEnabled = config.Bind("Quick Transfer", "DirectFeedMagazineLoadEnabled", true, "Enable loading rounds from a magazine into a direct-feed gun.");
             quickLoadMagazineEnabled = config.Bind("Quick Transfer", "MagazineQuickLoadEnabled", true, "Enable quick loading matching loose rounds into magazines.");
+
+            autoHighlightEnabled = config.Bind("Auto Highlight", "AutoHighlightEnabled", true, "Enable auto-highlighting compatible items when dragging.");
+            autoHighlightWaterContainerEnabled = config.Bind("Auto Highlight", "WaterContainerHighlightEnabled", true, "Enable highlighting compatible water containers.");
+            autoHighlightAmmoEnabled = config.Bind("Auto Highlight", "AmmoHighlightEnabled", true, "Enable highlighting compatible magazines and rounds.");
+            autoHighlightGunEnabled = config.Bind("Auto Highlight", "GunHighlightEnabled", true, "Enable highlighting compatible guns.");
+            highlightColorCompatible = config.Bind("Auto Highlight", "ColorCompatible", "0,1,0,1", "RGBA color for compatible/loadable items (R,G,B,A). Default: green.");
+            highlightColorFull = config.Bind("Auto Highlight", "ColorFull", "0,1,1,1", "RGBA color for compatible but full items (R,G,B,A). Default: cyan.");
+            highlightColorPartial = config.Bind("Auto Highlight", "ColorPartial", "1,1,0,1", "RGBA color for partially compatible items (R,G,B,A). Default: yellow.");
         }
     }
 }

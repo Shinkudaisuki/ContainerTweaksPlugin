@@ -14,10 +14,11 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 - 在扩展后的容器区域内交互时，减少容器界面意外关闭的情况。
 - 添加可配置的快速转移快捷键（默认左<kbd>Ctrl</kbd>），用于在容器之间移动同类物品。
 - 支持在兼容的水容器之间快速转移液体。
-- 支持在相同弹药类型的弹匣之间快速转移子弹。
-- 支持快速装填霰弹枪子弹。
-- 支持向弹匣快速装填子弹。
+- 支持在相同弹药类型的弹匣（包括12号霰弹盒）之间快速转移子弹。
+- 支持向直接供弹枪械（通常为霰弹枪）快速装填弹匣（包括12号霰弹盒）中的子弹。
+- 支持向弹匣（包括12号霰弹盒）快速装填子弹。
 - 使用 BepInEx 配置文件调整网格布局、滚动、拖拽阈值，以及各项功能的开关。
+- 拖拽物品时自动高亮容器中兼容的物品（水容器、弹药、枪械）。
 - 支持联机 mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop)。
 
 ## 配置
@@ -44,10 +45,17 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 | `Quick Transfer` | `QuickTransferKey` | `LeftControl` | 按住该按键并将物品拖放到目标容器上，可快速转移匹配物品或兼容液体。 |
 | `Quick Transfer` | `ItemTransferEnabled` | `true` | 启用将匹配物品移动到兼容目标容器。 |
 | `Quick Transfer` | `LiquidTransferEnabled` | `true` | 启用兼容液体容器之间的液体转移。 |
-| `Quick Transfer` | `MagazineTransferEnabled` | `true` | 启用相同弹药类型弹匣之间转移子弹。 |
-| `Quick Transfer` | `ShotgunRoundLoadEnabled` | `true` | 启用从源容器向霰弹枪装填霰弹枪子弹。 |
-| `Quick Transfer` | `ShotgunBoxLoadEnabled` | `true` | 启用从霰弹枪弹盒向霰弹枪装填子弹。 |
-| `Quick Transfer` | `MagazineQuickLoadEnabled` | `true` | 启用向弹匣快速装填匹配散装子弹。 |
+| `Quick Transfer` | `MagazineTransferEnabled` | `true` | 启用相同弹药类型弹匣（包括12号霰弹盒）之间转移子弹。 |
+| `Quick Transfer` | `DirectFeedRoundLoadEnabled` | `true` | 启用从源容器向直接供弹枪械（通常为霰弹枪）装填子弹。 |
+| `Quick Transfer` | `DirectFeedMagazineLoadEnabled` | `true` | 启用从弹匣（包括12号霰弹盒）向直接供弹枪械（通常为霰弹枪）装填子弹。 |
+| `Quick Transfer` | `MagazineQuickLoadEnabled` | `true` | 启用向弹匣（包括12号霰弹盒）快速装填匹配散装子弹。 |
+| `Auto Highlight` | `AutoHighlightEnabled` | `true` | 启用拖拽物品时自动高亮兼容物品。 |
+| `Auto Highlight` | `WaterContainerHighlightEnabled` | `true` | 启用高亮兼容的水容器。 |
+| `Auto Highlight` | `AmmoHighlightEnabled` | `true` | 启用高亮兼容的弹匣（包括12号霰弹盒）和子弹。 |
+| `Auto Highlight` | `GunHighlightEnabled` | `true` | 启用高亮兼容的枪械。 |
+| `Auto Highlight` | `ColorCompatible` | `0,1,0,1` | 兼容/可装填物品的 RGBA 颜色。默认：绿色。 |
+| `Auto Highlight` | `ColorFull` | `0,1,1,1` | 兼容但已满物品的 RGBA 颜色。默认：青色。 |
+| `Auto Highlight` | `ColorPartial` | `1,1,0,1` | 部分兼容物品的 RGBA 颜色。默认：黄色。 |
 
 ## 快速转移
 
@@ -56,10 +64,17 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 - 普通物品：将所在容器中名称相同的匹配物品移动到目标容器。
 - 液体容器：将所在容器中所有含有相同类型液体的液体容器移动到目标**物品容器**。
 - 液体容器：当目标**液体容器**为空或液体种类完全相同时，可转移液体。
-- 子弹：将所在容器的所有同种子弹装填到目标弹匣。
+- 子弹：将所在容器的所有同种子弹装填到目标弹匣或直接供弹枪械。
 - 弹匣（包括12号霰弹盒）：在相同弹药类型的弹匣之间转移子弹。
-- 霰弹枪子弹：将所在容器（包括12号霰弹盒）的所有子弹装填进目标霰弹枪。
 - 目标容器必须能够容纳被拖拽的物品。
+
+## 自动高亮
+
+拖拽物品时，容器中兼容的物品会自动高亮：
+
+- **绿色**：兼容且有空间（如可接收当前子弹的弹匣，可装填的枪械）。
+- **青色**：兼容但已满（如相同弹药类型的弹匣已满）。
+- **黄色**：部分兼容的水容器——包含被拖拽物品中液体类型的子集。
 
 ## 安装
 
@@ -83,6 +98,11 @@ ContainerTweaks 是一个用于 **未知伤亡**（英文名：**Casualties: Unk
 感谢 QoL-Unknown 的原作者。如果原作者希望，本项目可以移除相关参考或移植代码。
 
 ## 更新日志
+
+### v1.4.0
+
+- 新增拖拽物品时自动高亮容器中兼容物品（水容器、弹药、枪械）。
+- 新增高亮功能开关及自定义高亮颜色的配置项。
 
 ### v1.3.0
 

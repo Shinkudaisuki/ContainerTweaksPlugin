@@ -67,6 +67,7 @@
     <Compile Include="ContainerScrolling.cs" />
     <Compile Include="QuickTransfer.cs" />
     <Compile Include="MpCompat.cs" />
+    <Compile Include="AutoHighlight.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   

@@ -15,9 +15,10 @@ ContainerTweaks is a BepInEx plugin for **Casualties: Unknown Demo** that improv
 - Adds a configurable quick-transfer hotkey (default: <kbd>LeftControl</kbd>) for moving matching items between containers.
 - Supports quick liquid transfer between compatible water containers.
 - Supports quick magazine-to-magazine transfers for the same ammo type.
-- Supports quick shotgun round loading and shotgun box loading.
-- Supports quick loading rounds into a magazine.
+- Supports quick loading rounds (in a magazine, including a 12gauge box) into a direct-feed gun (typically a shotgun).
+- Supports quick loading rounds into a magazine, including a 12gauge box.
 - Provides BepInEx configuration entries for grid layout, scrolling, drag threshold values, and enabling / disabling specific features.
+- Auto-highlights compatible items in the container when dragging an item (water containers, ammo, and guns).
 - Supports multiplayer mod [Casualties Together](https://github.com/Krokosha666/cas-unk-krokosha-multiplayer-coop).
 
 ## Configuration
@@ -45,9 +46,16 @@ Available options:
 | `Quick Transfer` | `ItemTransferEnabled` | `true` | Enable moving matching items into compatible target containers. |
 | `Quick Transfer` | `LiquidTransferEnabled` | `true` | Enable transferring liquid between compatible liquid containers. |
 | `Quick Transfer` | `MagazineTransferEnabled` | `true` | Enable moving rounds between magazines of the same ammo type. |
-| `Quick Transfer` | `ShotgunRoundLoadEnabled` | `true` | Enable loading shotgun rounds from the source container into a shotgun. |
-| `Quick Transfer` | `ShotgunBoxLoadEnabled` | `true` | Enable loading shotgun shells from shotgun ammo boxes into a shotgun. |
+| `Quick Transfer` | `DirectFeedRoundLoadEnabled` | `true` | Enable loading rounds from the source container into a direct-feed gun. |
+| `Quick Transfer` | `DirectFeedMagazineLoadEnabled` | `true` | Enable loading rounds from a magazine into a direct-feed gun. |
 | `Quick Transfer` | `MagazineQuickLoadEnabled` | `true` | Enable quick loading matching loose rounds into magazines. |
+| `Auto Highlight` | `AutoHighlightEnabled` | `true` | Enable auto-highlighting compatible items when dragging. |
+| `Auto Highlight` | `WaterContainerHighlightEnabled` | `true` | Enable highlighting compatible water containers. |
+| `Auto Highlight` | `AmmoHighlightEnabled` | `true` | Enable highlighting compatible magazines and rounds. |
+| `Auto Highlight` | `GunHighlightEnabled` | `true` | Enable highlighting compatible guns. |
+| `Auto Highlight` | `ColorCompatible` | `0,1,0,1` | RGBA color for compatible/loadable items. Default: green. |
+| `Auto Highlight` | `ColorFull` | `0,1,1,1` | RGBA color for compatible but full items. Default: cyan. |
+| `Auto Highlight` | `ColorPartial` | `1,1,0,1` | RGBA color for partially compatible items. Default: yellow. |
 
 ## Quick Transfer
 
@@ -56,10 +64,17 @@ Hold the configured quick-transfer key while dragging an item onto another conta
 - For normal items, matching items with the same full name are moved from the source container to the target container.
 - For water containers, **themselves** with same liquid types in the source container are transferred to the target **item** container.
 - For water containers, **liquids** are transferred when the target **water** container is empty or has the same liquid types.
-- For ammo, all rounds of the same type are loaded into the target magazine (including a 12gauge box).
+- For ammo, all rounds of the same type are loaded into the target magazine (including a 12gauge box) or the target direct-feed gun (typically a shotgun).
 - For magazines (including 12gauge boxes), rounds are transferred between matching magazines of the same ammo type.
-- For shotgun ammo, all shotgun ammo in the source container/12gauge box is loaded into the target shotgun.
 - The target container must be able to hold the dragged item.
+
+## Auto Highlight
+
+When dragging an item, compatible items in the container are automatically highlighted:
+
+- **Green**: compatible and has space (e.g. a magazine that can receive the dragged round, a gun that can be loaded).
+- **Cyan**: compatible but full (e.g. a magazine of the same ammo type but already full).
+- **Yellow**: partially compatible water container — contains a subset of the liquid types in the dragged item.
 
 ## Installation
 
@@ -83,6 +98,11 @@ Because QoL-Unknown does not support the latest current version (v7.0.1) of the 
 Thanks to the original author of QoL-Unknown. If the original author prefers, the related referenced or ported code can be removed from this project.
 
 ## Changelog
+
+### v1.4.0
+
+- Added auto-highlight for compatible items when dragging (water containers, ammo, and guns).
+- Added configuration entries for highlight feature toggles and custom highlight colors.
 
 ### v1.3.0
 
